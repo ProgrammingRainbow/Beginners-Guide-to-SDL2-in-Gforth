@@ -1,0 +1,115 @@
+require SDL2/SDL.fs
+require SDL2/SDL_image.fs
+require random.fs
+
+0 CONSTANT NULL
+s\" Colors and Icon\0" DROP CONSTANT WINDOW_TITLE
+800 CONSTANT SCREEN_WIDTH
+600 CONSTANT SCREEN_HEIGHT
+SDL_INIT_EVERYTHING CONSTANT sdl-flags
+IMG_INIT_PNG CONSTANT img-flags
+
+0 VALUE exit-value
+NULL VALUE window
+NULL VALUE renderer
+CREATE event SDL_Event ALLOT
+NULL VALUE background
+
+: game-cleanup ( -- )
+    background SDL_DestroyTexture
+    NULL TO background
+    renderer SDL_DestroyRenderer
+    NULL TO renderer
+    window SDL_DestroyWindow
+    NULL TO window
+
+    IMG_Quit
+    SDL_Quit
+    exit-value (BYE)
+;
+
+: c-str-len ( c-addr -- c-addr u ) 0 BEGIN 2DUP + C@ WHILE 1+ REPEAT ;
+
+: error ( c-addr u -- )
+    stderr write-file
+    SDL_GetError c-str-len stderr write-file
+    s\" \n" stderr write-file
+    1 TO exit-value
+    game-cleanup
+;
+
+: initialize-sdl ( -- )
+    sdl-flags SDL_Init IF
+        S" Error initializing SDL: " error
+    THEN
+
+    img-flags IMG_Init img-flags AND img-flags <> IF
+        S" Error initializing SDL_image: " error
+    THEN
+
+    WINDOW_TITLE SDL_WINDOWPOS_CENTERED SDL_WINDOWPOS_CENTERED SCREEN_WIDTH SCREEN_HEIGHT 0
+    SDL_CreateWindow TO window
+    window 0= IF 
+        S" Error creating Window: " error
+    THEN
+
+    window -1 0 SDL_CreateRenderer TO renderer
+    renderer 0= IF
+        S" Error creating Renderer: " error
+    THEN
+
+    utime DROP seed ! rnd DROP
+
+    S\" images/Gforth-logo.png\0" DROP IMG_Load DUP 0= IF
+        S" Error loading Surface: " error
+    THEN
+    window OVER SDL_SetWindowIcon
+    SDL_FreeSurface
+;
+
+: load-media ( -- )
+    renderer S\" images/background.png\0" DROP IMG_LoadTexture TO background
+    background 0= IF
+        S" Error loading Texture: " error
+    THEN
+;
+
+: random-color-renderer ( -- )
+    renderer 256 random 256 random 256 random 255 SDL_SetRenderDrawColor DROP
+;
+
+: game-loop ( -- )
+    BEGIN
+        BEGIN event SDL_PollEvent WHILE
+            event SDL_Event-type L@
+            DUP SDL_QUIT_ENUM = IF
+                game-cleanup
+            THEN
+            SDL_KEYDOWN = IF event SDL_KeyboardEvent-keysym L@
+                DUP SDL_SCANCODE_ESCAPE = IF
+                    game-cleanup
+                THEN
+                SDL_SCANCODE_SPACE = IF
+                    random-color-renderer
+                THEN
+            THEN
+        REPEAT
+
+        renderer SDL_RenderClear DROP
+        
+        renderer background NULL NULL SDL_RenderCopy DROP
+
+        renderer SDL_RenderPresent
+
+        16 SDL_Delay
+
+    FALSE UNTIL
+;
+
+: play-game ( -- )
+    initialize-sdl
+    load-media
+    game-loop
+;
+
+play-game
