@@ -148,7 +148,8 @@ TEXT_VEL VALUE text-yvel
             DUP SDL_QUIT_ENUM = IF
                 game-cleanup
             THEN
-            SDL_KEYDOWN = IF event SDL_KeyboardEvent-keysym L@
+            SDL_KEYDOWN = IF
+                event SDL_KeyboardEvent-keysym SDL_Keysym-scancode SL@
                 DUP SDL_SCANCODE_ESCAPE = IF
                     game-cleanup
                 THEN

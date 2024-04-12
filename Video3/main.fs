@@ -42,7 +42,7 @@ NULL VALUE background
         S" Error initializing SDL: " error
     THEN
 
-    IMG_FLAGS IMG_Init img-flags AND img-flags <> IF
+    IMG_FLAGS IMG_Init IMG_FLAGS AND IMG_FLAGS <> IF
         S" Error initializing SDL_image: " error
     THEN
 
@@ -72,7 +72,8 @@ NULL VALUE background
             DUP SDL_QUIT_ENUM = IF
                 game-cleanup
             THEN
-            SDL_KEYDOWN = IF event SDL_KeyboardEvent-keysym L@
+            SDL_KEYDOWN = IF
+                event SDL_KeyboardEvent-keysym SDL_Keysym-scancode SL@
                 SDL_SCANCODE_ESCAPE = IF
                     game-cleanup
                 THEN
