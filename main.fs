@@ -5,12 +5,12 @@ require SDL2/SDL_mixer.fs
 require random.fs
 
 0 CONSTANT NULL
-s\" Sound Effects and Music\0" DROP CONSTANT WINDOW_TITLE
-800 CONSTANT SCREEN_WIDTH
-600 CONSTANT SCREEN_HEIGHT
-SDL_INIT_EVERYTHING CONSTANT sdl-flags
-IMG_INIT_PNG CONSTANT img-flags
-MIX_INIT_OGG CONSTANT mix-flags
+S\" Sound Effects and Music\0" DROP CONSTANT WINDOW_TITLE
+800 CONSTANT WINDOW_WIDTH
+600 CONSTANT WINDOW_HEIGHT
+SDL_INIT_EVERYTHING CONSTANT SDL_FLAGS
+IMG_INIT_PNG CONSTANT IMG_FLAGS
+MIX_INIT_OGG CONSTANT MIX_FLAGS 
 80 CONSTANT TEXT_SIZE
 3 CONSTANT TEXT_VEL
 5 CONSTANT SPRITE_VEL
@@ -47,8 +47,6 @@ NULL VALUE music
     NULL TO sprite-image
     text-font TTF_CloseFont
     NULL TO text-font
-    text-image SDL_DestroyTexture
-    NULL TO text-image
     background SDL_DestroyTexture
     NULL TO background
     renderer SDL_DestroyRenderer
@@ -67,19 +65,19 @@ NULL VALUE music
 : c-str-len ( c-addr -- c-addr u ) 0 BEGIN 2DUP + C@ WHILE 1+ REPEAT ;
 
 : error ( c-addr u -- )
-    stderr write-file
-    SDL_GetError c-str-len stderr write-file
-    s\" \n" stderr write-file
+    STDERR WRITE-FILE
+    SDL_GetError c-str-len STDERR WRITE-FILE
+    S\" \n" STDERR WRITE-FILE
     1 TO exit-value
     game-cleanup
 ;
 
 : initialize-sdl ( -- )
-    sdl-flags SDL_Init IF
-        S" Error initializing SDL: " error
+    SDL_FLAGS SDL_Init IF
+        S" Error initializing SDL2: " error
     THEN
 
-    img-flags IMG_Init img-flags AND img-flags <> IF
+    IMG_FLAGS IMG_Init IMG_FLAGS AND IMG_FLAGS <> IF
         S" Error initializing SDL_image: " error
     THEN
 
@@ -87,7 +85,7 @@ NULL VALUE music
         S" Error initializing SDL_ttf: " error
     THEN
 
-    mix-flags MIX_Init mix-flags AND mix-flags <> IF
+    MIX_FLAGS Mix_Init MIX_FLAGS AND MIX_FLAGS <> IF
         S" Error initializing SDL_mixer: " error
     THEN
 
@@ -95,9 +93,9 @@ NULL VALUE music
         S" Error opening Audio: " error
     THEN
 
-    WINDOW_TITLE SDL_WINDOWPOS_CENTERED SDL_WINDOWPOS_CENTERED SCREEN_WIDTH SCREEN_HEIGHT 0
+    WINDOW_TITLE SDL_WINDOWPOS_CENTERED SDL_WINDOWPOS_CENTERED WINDOW_WIDTH WINDOW_HEIGHT 0
     SDL_CreateWindow TO window
-    window 0= IF 
+    window 0= IF
         S" Error creating Window: " error
     THEN
 
@@ -128,18 +126,19 @@ NULL VALUE music
         S" Error loading Texture: " error
     THEN
 
-    sprite-image NULL NULL sprite-rect SDL_Rect-w sprite-rect SDL_Rect-h SDL_QueryTexture IF
+    sprite-image NULL NULL sprite-rect SDL_Rect-w sprite-rect SDL_Rect-h SDL_QueryTexture
+    IF
         S" Error querying Texture: " error
     THEN
 
     S\" sounds/SDL.ogg\0" DROP Mix_LoadWAV TO sdl-sound
     sdl-sound 0= IF
-        S" Error loading Sound: " error
+        S" Error loading Chunk: " error
     THEN
 
     S\" sounds/Forth.ogg\0" DROP Mix_LoadWAV TO forth-sound
     forth-sound 0= IF
-        S" Error loading Sound: " error
+        S" Error loading Chunk: " error
     THEN
 
     S\" music/freesoftwaresong-8bit.ogg\0" DROP Mix_LoadMUS TO music
@@ -148,15 +147,15 @@ NULL VALUE music
     THEN
 ;
 
-: random-color-renderer ( -- )
-    renderer 256 random 256 random 256 random 255 SDL_SetRenderDrawColor DROP
+: random-color ( -- )
+    renderer 256 RANDOM 256 RANDOM 256 RANDOM 255 SDL_SetRenderDrawColor DROP
     -1 forth-sound 0 Mix_PlayChannel DROP
 ;
 
 : create-text ( -- )
     S\" fonts/freesansbold.ttf\0" DROP TEXT_SIZE TTF_OpenFont TO text-font
     text-font 0= IF
-        S" Error creating font: " error
+        S" Error opening Font: " error
     THEN
 
     text-color
@@ -165,8 +164,9 @@ NULL VALUE music
     255 OVER SDL_Color-b C!
     255 SWAP SDL_Color-a C!
 
-    text-font S\" SDL\0" DROP text-color TTF_RenderText_Blended DUP 0= IF
-        S" Error creating font surface: " error
+    text-font S\" SDL\0" DROP text-color TTF_RenderText_Blended
+    DUP 0= IF
+        S" Error creating text Surface: " error
     THEN
 
     text-rect
@@ -176,7 +176,7 @@ NULL VALUE music
     renderer OVER SDL_CreateTextureFromSurface TO text-image
     SDL_FreeSurface
     text-image 0= IF
-        S" Error creating texuture from file: " error
+        S" Error creating Texture from Surface: " error
     THEN
 ;
 
@@ -186,7 +186,7 @@ NULL VALUE music
         TEXT_VEL TO text-xvel
         -1 sdl-sound 0 Mix_PlayChannel DROP
     THEN
-    text-rect SDL_Rect-w SL@ + SCREEN_WIDTH > IF
+    text-rect SDL_Rect-w SL@ + WINDOW_WIDTH > IF
         TEXT_VEL NEGATE TO text-xvel
         -1 sdl-sound 0 Mix_PlayChannel DROP
     THEN
@@ -196,26 +196,23 @@ NULL VALUE music
         TEXT_VEL TO text-yvel
         -1 sdl-sound 0 Mix_PlayChannel DROP
     THEN
-    text-rect SDL_Rect-h SL@ + SCREEN_HEIGHT > IF
+    text-rect SDL_Rect-h SL@ + WINDOW_HEIGHT > IF
         TEXT_VEL NEGATE TO text-yvel
         -1 sdl-sound 0 Mix_PlayChannel DROP
     THEN
 ;
 
 : update-sprite ( -- )
-    keystate SDL_Keysym-scancode 
+    keystate SDL_Keysym-scancode
     DUP SDL_SCANCODE_LEFT + C@ 1 = OVER SDL_SCANCODE_A + C@ 1 = OR IF
         sprite-rect SDL_Rect-x DUP SL@ SPRITE_VEL - SWAP L!
     THEN
-
     DUP SDL_SCANCODE_RIGHT + C@ 1 = OVER SDL_SCANCODE_D + C@ 1 = OR IF
         sprite-rect SDL_Rect-x DUP SL@ SPRITE_VEL + SWAP L!
     THEN
-
     DUP SDL_SCANCODE_UP + C@ 1 = OVER SDL_SCANCODE_W + C@ 1 = OR IF
         sprite-rect SDL_Rect-y DUP SL@ SPRITE_VEL - SWAP L!
     THEN
-
     DUP SDL_SCANCODE_DOWN + C@ 1 = SWAP SDL_SCANCODE_S + C@ 1 = OR IF
         sprite-rect SDL_Rect-y DUP SL@ SPRITE_VEL + SWAP L!
     THEN
@@ -245,7 +242,7 @@ NULL VALUE music
                     game-cleanup
                 THEN
                 DUP SDL_SCANCODE_SPACE = IF
-                    random-color-renderer
+                    random-color
                 THEN
                 SDL_SCANCODE_M = IF
                     pause-music
@@ -255,9 +252,9 @@ NULL VALUE music
 
         update-text
         update-sprite
-        
+
         renderer SDL_RenderClear DROP
-        
+
         renderer background NULL NULL SDL_RenderCopy DROP
         renderer text-image NULL text-rect SDL_RenderCopy DROP
         renderer sprite-image NULL sprite-rect SDL_RenderCopy DROP
