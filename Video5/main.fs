@@ -5,10 +5,10 @@ require random.fs
 
 0 CONSTANT NULL
 s\" Moving Text\0" DROP CONSTANT WINDOW_TITLE
-800 CONSTANT SCREEN_WIDTH
-600 CONSTANT SCREEN_HEIGHT
-SDL_INIT_EVERYTHING CONSTANT sdl-flags
-IMG_INIT_PNG CONSTANT img-flags
+800 CONSTANT WINDOW_WIDTH
+600 CONSTANT WINDOW_HEIGHT
+SDL_INIT_EVERYTHING CONSTANT SDL_FLAGS
+IMG_INIT_PNG CONSTANT IMG_FLAGS
 80 CONSTANT TEXT_SIZE
 3 CONSTANT TEXT_VEL
 
@@ -53,11 +53,11 @@ TEXT_VEL VALUE text-yvel
 ;
 
 : initialize-sdl ( -- )
-    sdl-flags SDL_Init IF
+    SDL_FLAGS SDL_Init IF
         S" Error initializing SDL: " error
     THEN
 
-    img-flags IMG_Init img-flags AND img-flags <> IF
+    IMG_FLAGS IMG_Init IMG_FLAGS AND IMG_FLAGS <> IF
         S" Error initializing SDL_image: " error
     THEN
 
@@ -65,7 +65,7 @@ TEXT_VEL VALUE text-yvel
         S" Error initializing SDL_ttf: " error
     THEN
 
-    WINDOW_TITLE SDL_WINDOWPOS_CENTERED SDL_WINDOWPOS_CENTERED SCREEN_WIDTH SCREEN_HEIGHT 0
+    WINDOW_TITLE SDL_WINDOWPOS_CENTERED SDL_WINDOWPOS_CENTERED WINDOW_WIDTH WINDOW_HEIGHT 0
     SDL_CreateWindow TO window
     window 0= IF 
         S" Error creating Window: " error
@@ -128,7 +128,7 @@ TEXT_VEL VALUE text-yvel
     DUP 0 < IF
         TEXT_VEL TO text-xvel
     THEN
-    text-rect SDL_Rect-w SL@ + SCREEN_WIDTH > IF
+    text-rect SDL_Rect-w SL@ + WINDOW_WIDTH > IF
         TEXT_VEL NEGATE TO text-xvel
     THEN
 
@@ -136,7 +136,7 @@ TEXT_VEL VALUE text-yvel
     DUP 0 < IF
         TEXT_VEL TO text-yvel
     THEN
-    text-rect SDL_Rect-h SL@ + SCREEN_HEIGHT > IF
+    text-rect SDL_Rect-h SL@ + WINDOW_HEIGHT > IF
         TEXT_VEL NEGATE TO text-yvel
     THEN
 ;
